@@ -1,11 +1,13 @@
 mod save;
 mod load;
 mod search;
+mod manage;
 
 use dialoguer::Select;
 use save::save;
 use load::load;
 use search::search;
+use manage::manage;
 
 fn main() {
     let selection = select();
@@ -16,13 +18,14 @@ fn main() {
         load();
     } else if selection == 2 {
         search();
-    } 
+    } else if selection == 3 {
+        manage();
+    }
 
-    println!("Hello, world!");
 }
 
 fn select() -> usize {
-    let opts = vec!["Save", "Load", "Search", "Exit"];
+    let opts = vec!["Save", "Load", "Search", "Manage", "Exit"];
     let selection = Select::new()
         .with_prompt("Select an option")
         .items(&opts)

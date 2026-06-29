@@ -1,8 +1,11 @@
-use std::io;
+use dialoguer::Input;
 
 pub fn search() {
-    let mut input = String::new();
-    io::stdin().read_line(&mut input).expect("Failed to read line");
-    
+    let input: String = Input::new()
+        .with_prompt("What do you want to search for? ")
+        .show_default(false)
+        .interact_text()
+        .expect("Failed to read line");
+
     println!("Searching for: {input}");
 }
