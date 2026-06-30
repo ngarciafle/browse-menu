@@ -1,6 +1,13 @@
 use dialoguer::Input;
+use std::fs::File;
+use std::io::{self, Write, Read};
 
-pub fn save() {
+struct State {
+    name: String,
+    commands: Vec<String>,
+}
+
+pub fn save(history: &mut Vec<String>) {
     let input: String = Input::new()
         .with_prompt("Enter the name of the file to save")
         .show_default(false)
@@ -8,6 +15,21 @@ pub fn save() {
         .expect("Failed to read line");
 
     // Save the state with the name
+    let state = State {
+        name: input.clone(),
+        commands: history.clone(),
+    };
+
+    let mut text = String::new();
+    for command in &state.commands {
+        text.push_str(command);
+        text.push('\n');
+    }
+
+    let route: String = format!("pub/{input}.json");
+
+    let mut file = File::create(&route).expect("Failed to create file (check names)");
+    file.write_all(text.as_bytes()).expect("Failed to write to file");
 
     println!("Saving state...");
 }
