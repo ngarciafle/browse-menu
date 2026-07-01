@@ -35,3 +35,6 @@
 # Directorios de compilación y caché de compilación (salsa secreta de Cargo)
 .rustc_info.json
 *.o
+
+# Data dir
+/pub/

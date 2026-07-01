@@ -26,7 +26,7 @@ pub fn save(history: &mut Vec<String>) {
         text.push('\n');
     }
 
-    let route: String = format!("pub/{input}.json");
+    let route: String = format!("pub/{input}.txt");
 
     if let Err(e) = fs::create_dir_all("pub") {
     panic!("No se pudo crear la carpeta 'pub': {}", e);
