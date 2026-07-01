@@ -12,26 +12,32 @@ use manage::manage;
 use crawl::crawl;
 
 fn main() {
-    let selection = select();
     let mut history: Vec<String> = Vec::new();
-
-    if selection == 0 {
-        history.push("Save".to_string());
-        save(&mut history);
-    } else if selection == 1 {
-        history.push("Load".to_string());
-        load(&mut history);
-    } else if selection == 2 {
-        history.push("Search".to_string());
-        search(&mut history);
-    } else if selection == 3 {
-        history.push("Manage".to_string());
-        manage(&mut history);
-    } else if selection == 4 {
-        history.push("Crawl".to_string());
-        crawl(&mut history);
+    
+    loop {
+        let selection = select();
+        
+        if selection == 0 {
+            history.push("Save".to_string());
+            save(&mut history);
+        } else if selection == 1 {
+            history.push("Load".to_string());
+            load(&mut history);
+        } else if selection == 2 {
+            history.push("Search".to_string());
+            search(&mut history);
+        } else if selection == 3 {
+            history.push("Manage".to_string());
+            manage(&mut history);
+        } else if selection == 4 {
+            history.push("Crawl".to_string());
+            crawl(&mut history);
+        } else {
+            println!("Exiting...");
+            history.push("Exit".to_string());
+            return;
+        }
     }
-
 }
 
 fn select() -> usize {
