@@ -12,6 +12,24 @@ pub fn crawl(history: &mut Vec<String>) {
 
     let mut domain = get_robot(&input).expect("Failed to get robots.txt URL");
     println!("Crawling URL: {domain}");
+
+    match reqwest::blocking::get(&domain) {
+        Ok(res) => {
+
+            if res.status().is_success() {
+                let robot_txt = res.text().unwrap_or_else(|_| "Failed to read response body".to_string());
+                println!("robots.txt content:\n{}", robot_txt);
+                history.push(format!("robots.txt content:\n{}", robot_txt));
+            } else {
+                println!("Failed to fetch robots.txt: HTTP {}", res.status());
+                history.push(format!("Failed to fetch robots.txt: HTTP {}", res.status()));
+            }
+        }
+        Err(err) => {
+            println!("Error fetching robots.txt: {}", err);
+            history.push(format!("Error fetching robots.txt: {}", err));
+        }
+    } 
 }
 
 
