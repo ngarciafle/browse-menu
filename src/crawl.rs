@@ -3,6 +3,7 @@ use url::Url;
 use robotparser::parser::parse_robots_txt;
 use robotparser::service::RobotsTxtService;
 use robotparser::model::RobotsTxt;
+use scraper::{Html, Selector};
 
 pub fn crawl(history: &mut Vec<String>) {
     let input: String = Input::new()
@@ -27,6 +28,8 @@ pub fn crawl(history: &mut Vec<String>) {
     } else {
         println!("Crawling is NOT allowed for the URL: {}", input);
     }
+
+    let links: Vec<String> = scraping_web(&input).expect("Failed to scrape the web page");
 
     // Petition as a EXAMPLE
     // let response = match reqwest::blocking::get(&input) {
@@ -101,4 +104,32 @@ fn get_robot(parsed_url: &Url) -> Result<RobotsTxt, url::ParseError> {
     //         error_message
     //     }
     // };   
+}
+
+fn scraping_web(url: &Url) -> Result<Vec<String>, String> {
+    let response = reqwest::blocking::get(url.clone()).expect("Failed to send request");
+    if !response.status().is_success() {
+        let error_message = format!("Failed to crawl URL: HTTP {}", response.status());
+        println!("{}", error_message);
+        return Err("The request was not successful".to_string());
+    }
+
+    let body = response.text().unwrap_or_else(|_| "Failed to read response body".to_string());
+    println!("Crawled content:\n{}", body);
+
+    let document = Html::parse_document(&body);
+    let selector = Selector::parse("a[href]").unwrap();
+
+    let mut links: Vec<String> = Vec::new();
+    println!("========= Links found on the page =========");
+
+    for element in document.select(&selector) {
+        if let Some(href) = element.value().attr("href") {
+            links.push(href.to_string());
+            println!("{}", href);
+        }
+
+    }
+
+    Ok(links)
 }
