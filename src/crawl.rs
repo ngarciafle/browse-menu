@@ -125,10 +125,25 @@ fn scraping_web(url: &Url) -> Result<Vec<String>, String> {
 
     for element in document.select(&selector) {
         if let Some(href) = element.value().attr("href") {
-            links.push(href.to_string());
-            println!("{}", href);
-        }
+            if href.starts_with("#") {
+                continue; // Skip anchors
+            }
 
+            // Relative URLs
+            if href.starts_with("/") {
+                let base_url = url.clone();
+                let absolute_url = base_url.join(href).expect("Failed to join URLs");
+                links.push(absolute_url.to_string());
+                println!("{}", absolute_url);
+                continue;
+            }
+
+            if href.starts_with("http://") || href.starts_with("https://") {
+                links.push(href.to_string());
+                println!("{}", href);
+                continue;
+            }
+        }
     }
 
     Ok(links)
