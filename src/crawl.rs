@@ -129,20 +129,36 @@ fn scraping_web(url: &Url) -> Result<Vec<String>, String> {
                 continue; // Skip anchors
             }
 
-            // Relative URLs
-            if href.starts_with("/") {
-                let base_url = url.clone();
-                let absolute_url = base_url.join(href).expect("Failed to join URLs");
-                links.push(absolute_url.to_string());
-                println!("{}", absolute_url);
-                continue;
+            match url.join(href) {
+                Ok(mut absolute_url) => {
+                    absolute_url.set_fragment(None);
+
+                    let final_url_str = absolute_url.to_string();
+
+                    if !links.contains(&final_url_str) {
+                        links.push(final_url_str.clone());
+                        println!("{}", final_url_str);
+                    }
+                }
+                Err(_) => {
+                    continue;
+                }
             }
 
-            if href.starts_with("http://") || href.starts_with("https://") {
-                links.push(href.to_string());
-                println!("{}", href);
-                continue;
-            }
+            // Relative URLs
+            // if href.starts_with("/") {
+            //     let base_url = url.clone();
+            //     let absolute_url = base_url.join(href).expect("Failed to join URLs");
+            //     links.push(absolute_url.to_string());
+            //     println!("{}", absolute_url);
+            //     continue;
+            // }
+
+            // if href.starts_with("http://") || href.starts_with("https://") {
+            //     links.push(href.to_string());
+            //     println!("{}", href);
+            //     continue;
+            // }
         }
     }
 
