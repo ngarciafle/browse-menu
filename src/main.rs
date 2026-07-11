@@ -16,7 +16,7 @@ use init_db::init_db;
 fn main() {
 
     // Init db if the user selects so -> public/private db
-    init_db();
+    let conn = init_db().unwrap();
 
     let mut history: Vec<String> = Vec::new();
     

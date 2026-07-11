@@ -29,8 +29,8 @@ pub fn save(history: &mut Vec<String>) {
     let route: String = format!("pub/{input}.txt");
 
     if let Err(e) = fs::create_dir_all("pub") {
-    panic!("No se pudo crear la carpeta 'pub': {}", e);
-}
+        panic!("No se pudo crear la carpeta 'pub': {}", e);
+    }
 
     let mut file = fs::File::create(&route).expect("Failed to create file (check names)");
     file.write_all(text.as_bytes()).expect("Failed to write to file");
