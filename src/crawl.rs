@@ -21,7 +21,7 @@ pub fn crawl(history: &mut Vec<String>) {
     let mut robots_txt = get_robot(&input).expect("Failed to get robots.txt URL");
 
 
-    println!("Robot.txt: {:#?}", robots_txt);  
+    // println!("Robot.txt: {:#?}", robots_txt);  
  
     if robots_txt.can_fetch("my_crawler", &input) {
         println!("Crawling is allowed for the URL: {}", input);
@@ -115,13 +115,13 @@ fn scraping_web(url: &Url) -> Result<Vec<String>, String> {
     }
 
     let body = response.text().unwrap_or_else(|_| "Failed to read response body".to_string());
-    println!("Crawled content:\n{}", body);
+    // println!("Crawled content:\n{}", body);
 
     let document = Html::parse_document(&body);
     let selector = Selector::parse("a[href]").unwrap();
 
     let mut links: Vec<String> = Vec::new();
-    println!("========= Links found on the page =========");
+    // println!("========= Links found on the page =========");
 
     for element in document.select(&selector) {
         if let Some(href) = element.value().attr("href") {
@@ -137,7 +137,7 @@ fn scraping_web(url: &Url) -> Result<Vec<String>, String> {
 
                     if !links.contains(&final_url_str) {
                         links.push(final_url_str.clone());
-                        println!("{}", final_url_str);
+                        // println!("{}", final_url_str);
                     }
                 }
                 Err(_) => {
