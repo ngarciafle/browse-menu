@@ -3,6 +3,7 @@ mod load;
 mod search;
 mod manage;
 mod crawl;
+mod init_db;
 
 use dialoguer::Select;
 use save::save;
@@ -10,8 +11,13 @@ use load::load;
 use search::search;
 use manage::manage;
 use crawl::crawl;
+use init_db::init_db;
 
 fn main() {
+
+    // Init db if the user selects so -> public/private db
+    init_db();
+
     let mut history: Vec<String> = Vec::new();
     
     loop {
