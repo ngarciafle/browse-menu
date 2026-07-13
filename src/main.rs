@@ -15,8 +15,17 @@ use init_db::init_db;
 
 fn main() {
 
-    // Init db if the user selects so -> public/private db
-    let conn = init_db().unwrap();
+    let public = Select::new()
+        .with_prompt("Do you want to use the public database?")
+        .items(&["Yes", "No"])
+        .default(0)
+        .interact()
+        .expect("Failed to read selection");
+
+    // Init db
+    let conn = init_db(public == 0).unwrap();
+
+
 
     let mut history: Vec<String> = Vec::new();
     
