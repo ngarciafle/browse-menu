@@ -4,6 +4,7 @@ mod search;
 mod manage;
 mod crawl;
 mod init_db;
+mod log_in;
 
 use dialoguer::Select;
 use save::save;
@@ -14,6 +15,7 @@ use crawl::crawl;
 use init_db::init_db;
 
 fn main() {
+    let mut history: Vec<String> = Vec::new();
 
     let public = Select::new()
         .with_prompt("Do you want to use the public database?")
@@ -23,12 +25,8 @@ fn main() {
         .expect("Failed to read selection");
 
     // Init db
-    let conn = init_db(public == 0).unwrap();
+    let conn = init_db(public == 0, &mut history).unwrap();
 
-
-
-    let mut history: Vec<String> = Vec::new();
-    
     loop {
         let selection = select();
         
