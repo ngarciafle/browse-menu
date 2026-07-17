@@ -4,8 +4,9 @@ use robotparser::parser::parse_robots_txt;
 use robotparser::service::RobotsTxtService;
 use robotparser::model::RobotsTxt;
 use scraper::{Html, Selector};
+use rusqlite::Connection;
 
-pub fn crawl(history: &mut Vec<String>) {
+pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
     let input: String = Input::new()
         .with_prompt("Enter the URL to crawl")
         .show_default(false)
@@ -29,7 +30,7 @@ pub fn crawl(history: &mut Vec<String>) {
         println!("Crawling is NOT allowed for the URL: {}", input);
     }
 
-    let links: Vec<String> = scraping_web(&input).expect("Failed to scrape the web page");
+    let links: Vec<String> = scraping_web(&input, &conn).expect("Failed to scrape the web page");
 
     // Petition as a EXAMPLE
     // let response = match reqwest::blocking::get(&input) {
@@ -106,7 +107,7 @@ fn get_robot(parsed_url: &Url) -> Result<RobotsTxt, url::ParseError> {
     // };   
 }
 
-fn scraping_web(url: &Url) -> Result<Vec<String>, String> {
+fn scraping_web(url: &Url, conn: &Connection) -> Result<Vec<String>, String> {
     let response = reqwest::blocking::get(url.clone()).expect("Failed to send request");
     if !response.status().is_success() {
         let error_message = format!("Failed to crawl URL: HTTP {}", response.status());
@@ -138,6 +139,10 @@ fn scraping_web(url: &Url) -> Result<Vec<String>, String> {
                     if !links.contains(&final_url_str) {
                         links.push(final_url_str.clone());
                         // println!("{}", final_url_str);
+                        conn.execute(
+                            "INSERT INTO crawl (url, title) VALUES (?1, ?2)",
+                            &[&final_url_str, &"".to_string()],
+                        ).expect("Failed to insert URL into database");
                     }
                 }
                 Err(_) => {

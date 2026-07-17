@@ -48,7 +48,8 @@ pub fn manage(history: &mut Vec<String>, conn: &rusqlite::Connection) {
 
     } else if selection == 3 {
         history.push("Read db".to_string());
-        let mut urls = conn.prepare("SELECT * FROM urls").expect("Failed to prepare statement");
+        let mut urls = conn.prepare("SELECT * FROM crawl").expect("Failed to prepare statement");
+        // **
         let url_iter = urls.query_map([], |row| {
             let id: i32 = row.get(0)?;
             let url: String = row.get(1)?;

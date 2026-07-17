@@ -44,7 +44,7 @@ fn main() {
             manage(&mut history, &conn);
         } else if selection == 4 {
             history.push("Crawl".to_string());
-            crawl(&mut history);
+            crawl(&mut history, &conn);
         } else {
             println!("Exiting...");
             history.push("Exit".to_string());
