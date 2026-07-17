@@ -1,5 +1,6 @@
 use dialoguer::Input;
 use dialoguer::Password;
+use dialoguer::Select;
 use crate::log_in::log_in;
 use rusqlite::Connection;
 
@@ -20,11 +21,20 @@ pub fn manage(history: &mut Vec<String>, conn: &rusqlite::Connection) {
     
     let logged: bool = log_in(history, &conn);
 
-    if logged {
-        println!("Welcome!");
-        history.push("Manage".to_string());
-    } else {
+    if !logged {
         println!("Incorrect password.");
         history.push("Failed Manage".to_string());
+        return;
     }
+
+    println!("Welcome!");
+    history.push("Manage".to_string());
+
+    let choices = vec!["Add User", "Delete User", "List Users", "Read db", "Exit"];
+    let selection = Select::new()
+        .with_prompt("How are you feeling?")
+        .items(&choices)
+        .default(0)
+        .interact()
+        .expect("Failed to read selection");
 }
