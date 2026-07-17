@@ -22,7 +22,7 @@ pub fn init_db(use_public: bool, history: &mut Vec<String>) -> Result<Connection
     if !was_created {
         history.push(format!("Database initialized at: {}", route_db));
         conn.execute(
-            "CREATE TABLE IF NOT EXISTS creadentials (
+            "CREATE TABLE IF NOT EXISTS credentials (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL,
                 password TEXT NOT NULL

@@ -41,7 +41,7 @@ fn main() {
             search(&mut history);
         } else if selection == 3 {
             history.push("Manage".to_string());
-            manage(&mut history);
+            manage(&mut history, &conn);
         } else if selection == 4 {
             history.push("Crawl".to_string());
             crawl(&mut history);
