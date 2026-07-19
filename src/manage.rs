@@ -5,7 +5,7 @@ use crate::log_in::log_in;
 use rusqlite::Connection;
 
 
-pub fn manage(history: &mut Vec<String>, conn: &rusqlite::Connection) {
+pub fn manage(history: &mut Vec<String>, conn: &rusqlite::Connection, logged: &mut bool) {
     // let user: String = Input::new()
     //     .with_prompt("Enter your username")
     //     .show_default(false)
@@ -18,10 +18,12 @@ pub fn manage(history: &mut Vec<String>, conn: &rusqlite::Connection) {
     //     .with_prompt("Enter your password")
     //     .interact()
     //     .expect("Failed to read line");
+    if !*logged {
+        *logged = log_in(history, &conn);
+    }
     
-    let logged: bool = log_in(history, &conn);
 
-    if !logged {
+    if !*logged {
         println!("Incorrect password.");
         history.push("Failed Manage".to_string());
         return;
@@ -30,7 +32,7 @@ pub fn manage(history: &mut Vec<String>, conn: &rusqlite::Connection) {
     println!("Welcome!");
     history.push("Manage".to_string());
 
-    let choices = vec!["Add User", "Delete User", "List Users", "Read db", "Exit"];
+    let choices = vec!["Add User", "Delete User", "List Users", "Read db", "Close Session", "Exit"];
     let selection = Select::new()
         .with_prompt("How are you feeling?")
         .items(&choices)
@@ -68,6 +70,10 @@ pub fn manage(history: &mut Vec<String>, conn: &rusqlite::Connection) {
         }
 
     } else if selection == 4 {
+        history.push("Close Session".to_string());
+        *logged = false;
+
+    } else if selection == 5 {
         history.push("Exit".to_string());
 
     } else {

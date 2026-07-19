@@ -13,19 +13,23 @@ use search::search;
 use manage::manage;
 use crawl::crawl;
 use init_db::init_db;
+use log_in::log_in;
 
 fn main() {
     let mut history: Vec<String> = Vec::new();
 
-    let public = Select::new()
-        .with_prompt("Do you want to use the public database?")
+    let log_choice = Select::new()
+        .with_prompt("Do you want to log in?")
         .items(&["Yes", "No"])
         .default(0)
         .interact()
         .expect("Failed to read selection");
 
     // Init db
-    let conn = init_db(public == 0, &mut history).unwrap();
+    let conn = init_db(log_choice == 0, &mut history).unwrap();
+
+    // Log in if the user wants to log in
+    let mut logged_in: bool = log_choice == 0 && log_in(&mut history, &conn);
 
     loop {
         let selection = select();
@@ -41,7 +45,7 @@ fn main() {
             search(&mut history);
         } else if selection == 3 {
             history.push("Manage".to_string());
-            manage(&mut history, &conn);
+            manage(&mut history, &conn, &mut logged_in);
         } else if selection == 4 {
             history.push("Crawl".to_string());
             crawl(&mut history, &conn);

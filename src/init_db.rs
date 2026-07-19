@@ -6,7 +6,7 @@ use bcrypt::{hash, DEFAULT_COST};
 use rusqlite::OptionalExtension;
 use crate::log_in::log_in;
 
-pub fn init_db(use_public: bool, history: &mut Vec<String>) -> Result<Connection> {
+pub fn init_db(log_in: bool, history: &mut Vec<String>) -> Result<Connection> {
     // Just initialize db
     if let Err(e) = fs::create_dir_all("pub") {
         history.push(format!("Failed to create 'pub' directory: {}", e));
@@ -62,33 +62,35 @@ pub fn init_db(use_public: bool, history: &mut Vec<String>) -> Result<Connection
         )
         .expect("Failed to insert admin credentials");
 
-    } else if !use_public {
-        // let admin_username: String = Input::new()
-        //     .with_prompt("Enter the admin username")
-        //     .show_default(false)
-        //     .interact_text()
-        //     .expect("Failed to read line");
-        // let admin_password: String = Password::new()
-        //     .with_prompt("Enter the admin password")
-        //     .interact()
-        //     .expect("Failed to read line");
+    }
+    // Won't use log in inside for now -> outside to easily manage the logged_in variable
+    // } else if log_in {
+    //     // let admin_username: String = Input::new()
+    //     //     .with_prompt("Enter the admin username")
+    //     //     .show_default(false)
+    //     //     .interact_text()
+    //     //     .expect("Failed to read line");
+    //     // let admin_password: String = Password::new()
+    //     //     .with_prompt("Enter the admin password")
+    //     //     .interact()
+    //     //     .expect("Failed to read line");
 
-        // let result_cred_search: Result<Option<String>, _> = conn.query_row(
-        //     "SELECT password FROM credentials WHERE username = ?1",
-        //     [&admin_username],
-        //     |row| row.get(0),
-        // ).optional();
+    //     // let result_cred_search: Result<Option<String>, _> = conn.query_row(
+    //     //     "SELECT password FROM credentials WHERE username = ?1",
+    //     //     [&admin_username],
+    //     //     |row| row.get(0),
+    //     // ).optional();
 
-        // let is_valid = match result_cred_search {
-        //     Ok(Some(res)) => {
-        //         bcrypt::verify(admin_password, &res).unwrap_or(false)
-        //     }
-        //     Ok(None) => false,
-        //     Err(_) => false,
-        // };
-        history.push("Admin login required".to_string());
-        log_in(&mut Vec::new(), &conn);
-    } 
+    //     // let is_valid = match result_cred_search {
+    //     //     Ok(Some(res)) => {
+    //     //         bcrypt::verify(admin_password, &res).unwrap_or(false)
+    //     //     }
+    //     //     Ok(None) => false,
+    //     //     Err(_) => false,
+    //     // };
+    //     history.push("Admin login required".to_string());
+    //     log_in(&mut Vec::new(), &conn);
+    // } 
     
     Ok(conn)
 }
