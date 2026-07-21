@@ -20,7 +20,7 @@ pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
     println!("Crawling URL: {}", input);
 
     let input: Url = Url::parse(&input).expect("Failed to parse URL");
-    crawling(&input, history.to_vec(), &conn);
+    crawling(&input, &conn);
 
     // REPLACED BY CRAWLIN 
     // let mut robots_txt = get_robot(&input).expect("Failed to get robots.txt URL");
@@ -175,22 +175,22 @@ fn scraping_web(url: &Url, conn: &Connection) -> Result<Vec<String>, String> {
     Ok(links)
 }
  
-async fn crawling(url: &Url, history: Vec<String>, conn: &Connection) {
-    let mut robots_txt = get_robot(&input).expect("Failed to get robots.txt URL");
+async fn crawling(url: &Url, conn: &Connection) {
+    let mut robots_txt = get_robot(&url).expect("Failed to get robots.txt URL");
 
 
     // println!("Robot.txt: {:#?}", robots_txt);  
  
-    if robots_txt.can_fetch("my_crawler", &input) {
-        println!("Crawling is allowed for the URL: {}", input);
+    if robots_txt.can_fetch("my_crawler", &url) {
+        println!("Crawling is allowed for the URL: {}", url);
     } else {
-        println!("Crawling is NOT allowed for the URL: {}", input);
+        println!("Crawling is NOT allowed for the URL: {}", url);
     }
 
-    let links: Vec<String> = scraping_web(&input, &conn).expect("Failed to scrape the web page");
+    let links: Vec<String> = scraping_web(&url, &conn).expect("Failed to scrape the web page");
 
     // Add tokio to stop with CTRL+C
     for link in links {
-        crawling(&Url::parse(&link).expect("Failed to parse URL"), history, conn).await;
+        crawling(&Url::parse(&link).expect("Failed to parse URL"), conn).await;
     }
 }
