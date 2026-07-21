@@ -5,6 +5,8 @@ use robotparser::service::RobotsTxtService;
 use robotparser::model::RobotsTxt;
 use scraper::{Html, Selector};
 use rusqlite::Connection;
+use tokio::sync::oneshot;
+use std::time::Duration;
 
 pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
     let input: String = Input::new()
@@ -168,4 +170,8 @@ fn scraping_web(url: &Url, conn: &Connection) -> Result<Vec<String>, String> {
     }
 
     Ok(links)
+}
+ 
+async fn crawling(url: &Url, conn: &Connection) {
+    
 }
