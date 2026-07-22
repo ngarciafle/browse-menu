@@ -23,10 +23,10 @@ pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
     let input: Url = Url::parse(&input).expect("Failed to parse URL");
     // crawling(&input, &conn);
 
-    let links: VecDeque<Url> = VecDeque::new();
+    let mut links: VecDeque<Url> = VecDeque::new();
     links.push_back(input.clone()); 
 
-    for link in links {
+    while let Some(input) = links.pop_front() {
         let mut robots_txt = get_robot(&input).expect("Failed to get robots.txt URL");
 
         // println!("Robot.txt: {:#?}", robots_txt);  
@@ -135,7 +135,7 @@ fn get_robot(parsed_url: &Url) -> Result<RobotsTxt, url::ParseError> {
 
 
 // Change to add links in a qeue
-fn scraping_web(url: &Url, conn: &Connection, urls: &mut VecDeque<String>) {
+fn scraping_web(url: &Url, conn: &Connection, urls: &mut VecDeque<Url>) {
     let response = reqwest::blocking::get(url.clone()).expect("Failed to send request");
     if !response.status().is_success() {
         let error_message = format!("Failed to crawl URL: HTTP {}", response.status());
@@ -166,14 +166,23 @@ fn scraping_web(url: &Url, conn: &Connection, urls: &mut VecDeque<String>) {
                     let final_url_str = absolute_url.to_string();
 
                     // Maybe just add it and check with db
-                    if !urls.contains(&final_url_str) {
-                        urls.push_back(final_url_str.clone());
-                        // println!("{}", final_url_str);
+                    let mut stmt: i32 = conn.query_row("SELECT COUNT(*) FROM crawl WHERE url = ?1", [final_url_str.clone()], |row| row.get(0)).expect("Failed to execute query");
+
+                    // url doesnt exists in the db
+                    if stmt == 0 {
+                        urls.push_back(Url::parse(&final_url_str).expect("Failed to parse URL"));
                         conn.execute(
                             "INSERT INTO crawl (url, title) VALUES (?1, ?2)",
                             &[&final_url_str, &"".to_string()],
                         ).expect("Failed to insert URL into database");
+                    // url exists in the db
+                    } else {
+                        conn.execute(
+                            "UPDATE crawl SET counter = counter + 1 WHERE url = ?1",
+                            &[&final_url_str],
+                        ).expect("Failed to update URL counter");
                     }
+                    // println!("{}", final_url_str);
                 }
                 Err(_) => {
                     continue;
