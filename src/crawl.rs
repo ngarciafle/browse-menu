@@ -7,6 +7,7 @@ use scraper::{Html, Selector};
 use rusqlite::Connection;
 use tokio::sync::oneshot;
 use std::time::Duration;
+use std::collections::VecDeque;
 
 pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
     let input: String = Input::new()
@@ -22,20 +23,40 @@ pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
     let input: Url = Url::parse(&input).expect("Failed to parse URL");
     crawling(&input, &conn);
 
-    // REPLACED BY CRAWLIN 
-    // let mut robots_txt = get_robot(&input).expect("Failed to get robots.txt URL");
+    let links: VecDeque<Url> = VecDeque::new();
+    links.push(input.clone()); 
 
+    for link in links {
+        let mut robots_txt = get_robot(&input).expect("Failed to get robots.txt URL");
 
-    // // println!("Robot.txt: {:#?}", robots_txt);  
- 
-    // if robots_txt.can_fetch("my_crawler", &input) {
-    //     println!("Crawling is allowed for the URL: {}", input);
-    // } else {
-    //     println!("Crawling is NOT allowed for the URL: {}", input);
-    // }
+        // println!("Robot.txt: {:#?}", robots_txt);  
+     
+        if robots_txt.can_fetch("my_crawler", &input) {
+            println!("Crawling is allowed for the URL: {}", input);
+        } else {
+            // Add the url to the db
+            println!("Crawling is NOT allowed for the URL: {}", input);
+            continue;
+        }
 
-    // let links: Vec<String> = scraping_web(&input, &conn).expect("Failed to scrape the web page");
-    // UNTIL HERE
+        if !url_exists(&conn, &input.to_string()) {
+            conn.execute(
+                "INSERT INTO crawl (url, title) 
+                VALUES (?1, ?2)",
+                &[&input.to_string(), &"".to_string()],
+            ).expect("Failed to insert URL into database");
+        } else {
+            conn.execute(
+                "UPDATE crawl SET counter = counter + 1 WHERE url = ?1",
+                &[&input.to_string()],
+            ).expect("Failed to update URL counter in database");
+            continue;
+
+        }
+    
+        scraping_web(&input, &conn, &mut links).expect("Failed to scrape the web page");
+    }
+
 
     // Petition as a EXAMPLE
     // let response = match reqwest::blocking::get(&input) {
@@ -112,7 +133,9 @@ fn get_robot(parsed_url: &Url) -> Result<RobotsTxt, url::ParseError> {
     // };   
 }
 
-fn scraping_web(url: &Url, conn: &Connection) -> Result<Vec<String>, String> {
+
+// Change to add links in a qeue
+fn scraping_web(url: &Url, conn: &Connection, urls: &mut VecDeque<String>) {
     let response = reqwest::blocking::get(url.clone()).expect("Failed to send request");
     if !response.status().is_success() {
         let error_message = format!("Failed to crawl URL: HTTP {}", response.status());
@@ -126,7 +149,7 @@ fn scraping_web(url: &Url, conn: &Connection) -> Result<Vec<String>, String> {
     let document = Html::parse_document(&body);
     let selector = Selector::parse("a[href]").unwrap();
 
-    let mut links: Vec<String> = Vec::new();
+    // let mut links: Vec<String> = Vec::new();
     // println!("========= Links found on the page =========");
 
     for element in document.select(&selector) {
@@ -141,8 +164,9 @@ fn scraping_web(url: &Url, conn: &Connection) -> Result<Vec<String>, String> {
 
                     let final_url_str = absolute_url.to_string();
 
-                    if !links.contains(&final_url_str) {
-                        links.push(final_url_str.clone());
+                    // Maybe just add it and check with db
+                    if !urls.contains(&final_url_str) {
+                        urls.push_back(final_url_str.clone());
                         // println!("{}", final_url_str);
                         conn.execute(
                             "INSERT INTO crawl (url, title) VALUES (?1, ?2)",
@@ -171,26 +195,30 @@ fn scraping_web(url: &Url, conn: &Connection) -> Result<Vec<String>, String> {
             // }
         }
     }
-
-    Ok(links)
 }
  
-async fn crawling(url: &Url, conn: &Connection) {
-    let mut robots_txt = get_robot(&url).expect("Failed to get robots.txt URL");
+// async fn crawling(url: &Url, conn: &Connection) {
+//     let mut robots_txt = get_robot(&url).expect("Failed to get robots.txt URL");
 
 
-    // println!("Robot.txt: {:#?}", robots_txt);  
+//     // println!("Robot.txt: {:#?}", robots_txt);  
  
-    if robots_txt.can_fetch("my_crawler", &url) {
-        println!("Crawling is allowed for the URL: {}", url);
-    } else {
-        println!("Crawling is NOT allowed for the URL: {}", url);
-    }
+//     if robots_txt.can_fetch("my_crawler", &url) {
+//         println!("Crawling is allowed for the URL: {}", url);
+//     } else {
+//         println!("Crawling is NOT allowed for the URL: {}", url);
+//     }
 
-    let links: Vec<String> = scraping_web(&url, &conn).expect("Failed to scrape the web page");
+//     let links: Vec<String> = scraping_web(&url, &conn).expect("Failed to scrape the web page");
 
-    // Add tokio to stop with CTRL+C
-    for link in links {
-        crawling(&Url::parse(&link).expect("Failed to parse URL"), conn).await;
-    }
+//     // Add tokio to stop with CTRL+C
+//     for link in links {
+//         crawling(&Url::parse(&link).expect("Failed to parse URL"), conn).await;
+//     }
+// }
+
+fn url_exists(conn: &Connection, url: &str) -> bool {
+    let mut stmt = conn.prepare("SELECT COUNT(*) FROM crawl WHERE url = ?1").expect("Failed to prepare statement");
+    let count: i64 = stmt.query_row([url], |row| row.get(0)).expect("Failed to execute query");
+    count > 0
 }

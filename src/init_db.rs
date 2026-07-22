@@ -33,11 +33,12 @@ pub fn init_db(log_in: bool, history: &mut Vec<String>) -> Result<Connection> {
         conn.execute(
             "CREATE TABLE IF NOT EXISTS crawl (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                url TEXT NOT NULL,
+                url TEXT UNIQUE NOT NULL,
                 title TEXT NOT NULL,
                 description TEXT,
                 content TEXT,
-                depth INTEGER DEFAULT 0, 
+                depth INTEGER DEFAULT 0,
+                counter INTEGER DEFAULT 1, 
                 date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )",
             [],
