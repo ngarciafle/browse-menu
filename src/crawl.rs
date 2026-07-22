@@ -21,10 +21,10 @@ pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
     println!("Crawling URL: {}", input);
 
     let input: Url = Url::parse(&input).expect("Failed to parse URL");
-    crawling(&input, &conn);
+    // crawling(&input, &conn);
 
     let links: VecDeque<Url> = VecDeque::new();
-    links.push(input.clone()); 
+    links.push_back(input.clone()); 
 
     for link in links {
         let mut robots_txt = get_robot(&input).expect("Failed to get robots.txt URL");
@@ -54,7 +54,7 @@ pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
 
         }
     
-        scraping_web(&input, &conn, &mut links).expect("Failed to scrape the web page");
+        scraping_web(&input, &conn, &mut links);
     }
 
 
@@ -140,7 +140,8 @@ fn scraping_web(url: &Url, conn: &Connection, urls: &mut VecDeque<String>) {
     if !response.status().is_success() {
         let error_message = format!("Failed to crawl URL: HTTP {}", response.status());
         println!("{}", error_message);
-        return Err("The request was not successful".to_string());
+        // return Err("The request was not successful".to_string());
+        return;
     }
 
     let body = response.text().unwrap_or_else(|_| "Failed to read response body".to_string());
