@@ -45,6 +45,7 @@ pub fn init_db(log_in: bool, history: &mut Vec<String>) -> Result<(Connection, b
         )
         .expect("Failed to create table");
 
+        println!("Let's create the admin credentials for the first time.");
         let admin_username: String = Input::new()
             .with_prompt("Enter the admin username")
             .show_default(false)
