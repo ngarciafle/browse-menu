@@ -57,18 +57,13 @@ pub fn manage(history: &mut Vec<String>, conn: &rusqlite::Connection, logged: &m
             let url_iter = urls.query_map([], |row| {
                 let id: i32 = row.get(0)?;
                 let url: String = row.get(1)?;
-                Ok((id, url))
+                let counter: i32 = row.get(2)?;
+                Ok((id, url, counter))
             }).expect("Failed to query urls");
     
-            for url in url_iter {
-                match url {
-                    Ok((id, url)) => {
-                        println!("ID: {}, URL: {}", id, url);
-                    }
-                    Err(err) => {
-                        // println!("Error reading URL: {}", err);
-                    }
-                }
+            for url in url_iter.flatten() {
+                let (id, url_str, counter) = url;
+                println!("ID: {}, URL: {}, Counter: {}", id, url_str, counter);
             }
     
         } else if selection == 4 {

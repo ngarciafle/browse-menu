@@ -26,10 +26,10 @@ fn main() {
         .expect("Failed to read selection");
 
     // Init db
-    let conn = init_db(log_choice == 0, &mut history).unwrap();
+    let (conn, was_created) = init_db(log_choice == 0, &mut history).expect("Failed to initialize database");
 
     // Log in if the user wants to log in
-    let mut logged_in: bool = log_choice == 0 && log_in(&mut history, &conn);
+    let mut logged_in: bool = !was_created || (log_choice == 0 && log_in(&mut history, &conn));
 
     loop {
         let selection = select();

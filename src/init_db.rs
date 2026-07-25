@@ -6,7 +6,7 @@ use bcrypt::{hash, DEFAULT_COST};
 use rusqlite::OptionalExtension;
 use crate::log_in::log_in;
 
-pub fn init_db(log_in: bool, history: &mut Vec<String>) -> Result<Connection> {
+pub fn init_db(log_in: bool, history: &mut Vec<String>) -> Result<(Connection, bool)> {
     // Just initialize db
     if let Err(e) = fs::create_dir_all("pub") {
         history.push(format!("Failed to create 'pub' directory: {}", e));
@@ -93,5 +93,5 @@ pub fn init_db(log_in: bool, history: &mut Vec<String>) -> Result<Connection> {
     //     log_in(&mut Vec::new(), &conn);
     // } 
     
-    Ok(conn)
+    Ok((conn, was_created))
 }
