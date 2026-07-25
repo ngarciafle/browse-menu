@@ -27,7 +27,24 @@ pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
     links.push_back(input.clone()); 
 
     while let Some(input) = links.pop_front() {
-        let mut robots_txt = get_robot(&input).expect("Failed to get robots.txt URL");
+        if url_exists(&conn, &input.to_string()) {
+            conn.execute(
+                "UPDATE crawl SET counter = counter + 1 WHERE url = ?1",
+                &[&input.to_string()],
+            ).expect("Failed to update URL counter in database");
+            // scraping_web(&input, &conn, &mut links);
+            // Dont know if scrape if it was scraped
+            continue;
+        } 
+
+        // If link is broken just continue
+        let mut robots_txt = match get_robot(&input) {
+            Ok(robots) => robots,
+            Err(e) => {
+                println!("Failed to get robots.txt for {}: {}", input, e);
+                continue;
+            }
+        };
 
         // println!("Robot.txt: {:#?}", robots_txt);  
      
@@ -39,22 +56,20 @@ pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
             continue;
         }
 
-        if !url_exists(&conn, &input.to_string()) {
+        // if !url_exists(&conn, &input.to_string()) {
             conn.execute(
                 "INSERT INTO crawl (url, title) 
                 VALUES (?1, ?2)",
                 &[&input.to_string(), &"".to_string()],
             ).expect("Failed to insert URL into database");
-        } else {
-            conn.execute(
-                "UPDATE crawl SET counter = counter + 1 WHERE url = ?1",
-                &[&input.to_string()],
-            ).expect("Failed to update URL counter in database");
-            continue;
+        // } else {
+        //     conn.execute(
+        //         "UPDATE crawl SET counter = counter + 1 WHERE url = ?1",
+        //         &[&input.to_string()],
+        //     ).expect("Failed to update URL counter in database");
 
-        }
+        // }
     
-        scraping_web(&input, &conn, &mut links);
     }
 
 
