@@ -191,24 +191,25 @@ fn scraping_web(url: &Url, conn: &Connection, urls: &mut VecDeque<Url>) {
                     absolute_url.set_fragment(None);
 
                     let final_url_str = absolute_url.to_string();
+                    urls.push_back(Url::parse(&final_url_str).expect("Failed to parse URL"));
 
                     // Maybe just add it and check with db
-                    let mut stmt: i32 = conn.query_row("SELECT COUNT(*) FROM crawl WHERE url = ?1", [final_url_str.clone()], |row| row.get(0)).expect("Failed to execute query");
+                    // let mut stmt: i32 = conn.query_row("SELECT COUNT(*) FROM crawl WHERE url = ?1", [final_url_str.clone()], |row| row.get(0)).expect("Failed to execute query");
 
-                    // url doesnt exists in the db
-                    if stmt == 0 {
-                        urls.push_back(Url::parse(&final_url_str).expect("Failed to parse URL"));
-                        conn.execute(
-                            "INSERT INTO crawl (url, title) VALUES (?1, ?2)",
-                            &[&final_url_str, &"".to_string()],
-                        ).expect("Failed to insert URL into database");
-                    // url exists in the db
-                    } else {
-                        conn.execute(
-                            "UPDATE crawl SET counter = counter + 1 WHERE url = ?1",
-                            &[&final_url_str],
-                        ).expect("Failed to update URL counter");
-                    }
+                    // // url doesnt exists in the db
+                    // if stmt == 0 {
+                    //     urls.push_back(Url::parse(&final_url_str).expect("Failed to parse URL"));
+                    //     conn.execute(
+                    //         "INSERT INTO crawl (url, title) VALUES (?1, ?2)",
+                    //         &[&final_url_str, &"".to_string()],
+                    //     ).expect("Failed to insert URL into database");
+                    // // url exists in the db
+                    // } else {
+                    //     conn.execute(
+                    //         "UPDATE crawl SET counter = counter + 1 WHERE url = ?1",
+                    //         &[&final_url_str],
+                    //     ).expect("Failed to update URL counter");
+                    // }
                     // println!("{}", final_url_str);
                 }
                 Err(_) => {
