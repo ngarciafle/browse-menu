@@ -101,26 +101,22 @@ pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
 
 
 fn get_robot(parsed_url: &Url) -> Result<RobotsTxt, url::ParseError> {
-    // http or https
-    let scheme = parsed_url.scheme();
-    
-    let domain = match parsed_url.host_str() {
-        Some(domain) => domain,
-        None => return Err(url::ParseError::EmptyHost),
-    };
-    
-    let robots_url = if let Some(port) = parsed_url.port() {
-        format!("{}://{}:{}/robots.txt", scheme, domain, port)
-    } else {
-        format!("{}://{}/robots.txt", scheme, domain)
-    };
-    let robots_url = Url::parse(&robots_url).expect("Failed to parse robots.txt URL");
+    let robots_url = parsed_url.join("/robots.txt")?;
+
+    let client = Client::builder()
+        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+        .build()
+        .expect("Failed to build HTTP client");
+
+    let response = client.get(robots_url.as_str()).send()?;
 
     let robots_txt = parse_robots_txt(robots_url.origin(), "User-Agent: *\nDisallow: /search\n");
-    assert!(robots_txt.get_warnings().is_empty(), "Failed to parse robots.txt: {:?}", robots_txt.get_warnings());
-    let robots_txt = robots_txt.get_result();
+    let content = response.text().unwrap_or_else(|_| "Failed to read response body".to_string());
 
-    return Ok(robots_txt);
+    let mut matcher = RobotsTxtService::new(robots_txt);
+    matcher.parse(&content);
+
+    Ok(matcher)
 
     // NOT NECESSARY WITH ACTUAL IMPLEMENTATION 
     // get the robots.txt content
