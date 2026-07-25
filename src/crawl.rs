@@ -8,6 +8,7 @@ use rusqlite::Connection;
 use tokio::sync::oneshot;
 use std::time::Duration;
 use std::collections::VecDeque;
+use reqwest::blocking::Client;
 
 pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
     let input: String = Input::new()
@@ -69,7 +70,6 @@ pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
         //     ).expect("Failed to update URL counter in database");
 
         // }
-    
     }
 
 
@@ -151,13 +151,25 @@ fn get_robot(parsed_url: &Url) -> Result<RobotsTxt, url::ParseError> {
 
 // Change to add links in a qeue
 fn scraping_web(url: &Url, conn: &Connection, urls: &mut VecDeque<Url>) {
-    let response = reqwest::blocking::get(url.clone()).expect("Failed to send request");
-    if !response.status().is_success() {
-        let error_message = format!("Failed to crawl URL: HTTP {}", response.status());
-        println!("{}", error_message);
-        // return Err("The request was not successful".to_string());
-        return;
-    }
+    let client = Client::builder()
+        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+        .build()
+        .expect("Failed to build HTTP client");
+
+    let response = match client.get(url.as_str()).send() {
+        Ok(res) => {
+            if res.status().is_success() {
+                res
+            } else {
+                println!("Failed to crawl URL: HTTP {}", res.status());
+                return;
+            }
+        }
+        Err(err) => {
+            println!("Error crawling URL: {}", err);
+            return;
+        }
+    };
 
     let body = response.text().unwrap_or_else(|_| "Failed to read response body".to_string());
     // println!("Crawled content:\n{}", body);
