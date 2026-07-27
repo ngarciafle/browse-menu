@@ -1,8 +1,6 @@
 use dialoguer::Input;
 use url::Url;
-use robotparser::parser::parse_robots_txt;
-use robotparser::service::RobotsTxtService;
-use robotparser::model::RobotsTxt;
+use robotstxt::DefaultMatcher;
 use scraper::{Html, Selector};
 use rusqlite::Connection;
 use tokio::sync::oneshot;
@@ -28,15 +26,17 @@ pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
     links.push_back(input.clone()); 
 
     while let Some(input) = links.pop_front() {
-        if url_exists(&conn, &input.to_string()) {
+        if url_exists(&conn, input.as_str()) {
             conn.execute(
                 "UPDATE crawl SET counter = counter + 1 WHERE url = ?1",
-                &[&input.to_string()],
+                &[input.as_str()],
             ).expect("Failed to update URL counter in database");
             // scraping_web(&input, &conn, &mut links);
             // Dont know if scrape if it was scraped
             continue;
         } 
+
+        let mut matcher = DefaultMatcher::default();
 
         // If link is broken just continue
         let mut robots_txt = match get_robot(&input) {
@@ -49,19 +49,17 @@ pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
 
         // println!("Robot.txt: {:#?}", robots_txt);  
      
-        if robots_txt.can_fetch("my_crawler", &input) {
-            println!("Crawling is allowed for the URL: {}", input);
-        } else {
-            // Add the url to the db
+        if !matcher.one_agent_allowed_by_robots(&robots_txt, "my_crawler", input.as_str()) {
             println!("Crawling is NOT allowed for the URL: {}", input);
             continue;
         }
+        println!("Crawling is allowed for the URL: {}", input);
 
         // if !url_exists(&conn, &input.to_string()) {
             conn.execute(
                 "INSERT INTO crawl (url, title) 
                 VALUES (?1, ?2)",
-                &[&input.to_string(), &"".to_string()],
+                &[input.as_str(), &"".to_string()],
             ).expect("Failed to insert URL into database");
         // } else {
         //     conn.execute(
@@ -100,7 +98,7 @@ pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
 }
 
 
-fn get_robot(parsed_url: &Url) -> Result<RobotsTxt, url::ParseError> {
+fn get_robot(parsed_url: &Url) -> Result<String, Box<dyn std::error::Error>> {
     let robots_url = parsed_url.join("/robots.txt")?;
 
     let client = Client::builder()
@@ -110,13 +108,9 @@ fn get_robot(parsed_url: &Url) -> Result<RobotsTxt, url::ParseError> {
 
     let response = client.get(robots_url.as_str()).send()?;
 
-    let robots_txt = parse_robots_txt(robots_url.origin(), "User-Agent: *\nDisallow: /search\n");
     let content = response.text().unwrap_or_else(|_| "Failed to read response body".to_string());
 
-    let mut matcher = RobotsTxtService::new(robots_txt);
-    matcher.parse(&content);
-
-    Ok(matcher)
+    Ok(content)
 
     // NOT NECESSARY WITH ACTUAL IMPLEMENTATION 
     // get the robots.txt content
@@ -186,7 +180,7 @@ fn scraping_web(url: &Url, conn: &Connection, urls: &mut VecDeque<Url>) {
                 Ok(mut absolute_url) => {
                     absolute_url.set_fragment(None);
 
-                    let final_url_str = absolute_url.to_string();
+                    let final_url_str = absolute_url.as_str();
                     urls.push_back(Url::parse(&final_url_str).expect("Failed to parse URL"));
 
                     // Maybe just add it and check with db
