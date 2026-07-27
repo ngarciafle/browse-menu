@@ -52,7 +52,7 @@ pub fn manage(history: &mut Vec<String>, conn: &rusqlite::Connection, logged: &m
     
         } else if selection == 3 {
             history.push("Read db".to_string());
-            let mut urls = conn.prepare("SELECT * FROM crawl").expect("Failed to prepare statement");
+            let mut urls = conn.prepare("SELECT id, url, counter FROM crawl").expect("Failed to prepare statement");
             // **
             let url_iter = urls.query_map([], |row| {
                 let id: i32 = row.get(0)?;
@@ -61,9 +61,15 @@ pub fn manage(history: &mut Vec<String>, conn: &rusqlite::Connection, logged: &m
                 Ok((id, url, counter))
             }).expect("Failed to query urls");
     
-            for url in url_iter.flatten() {
-                let (id, url_str, counter) = url;
-                println!("ID: {}, URL: {}, Counter: {}", id, url_str, counter);
+            for url in url_iter {
+                match url {
+                    Ok((id, url, counter)) => {
+                        println!("ID: {}, URL: {}, Counter: {}", id, url, counter);
+                    }
+                    Err(e) => {
+                        println!("Error reading URL from database: {}", e);
+                    }
+                }
             }
     
         } else if selection == 4 {

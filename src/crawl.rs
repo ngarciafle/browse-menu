@@ -174,6 +174,7 @@ fn scraping_web(url: &Url, conn: &Connection, urls: &mut VecDeque<Url>) {
 
     for element in document.select(&selector) {
         if let Some(href) = element.value().attr("href") {
+            // println!("{:?}", href);
             if href.starts_with("#") {
                 continue; // Skip anchors
             }
