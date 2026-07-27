@@ -35,9 +35,9 @@ pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
             // Dont know if scrape if it was scraped
             continue;
         } 
-
+        
         let mut matcher = DefaultMatcher::default();
-
+        
         // If link is broken just continue
         let mut robots_txt = match get_robot(&input) {
             Ok(robots) => robots,
@@ -46,25 +46,27 @@ pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
                 continue;
             }
         };
-
+        
         // println!("Robot.txt: {:#?}", robots_txt);  
-     
+        
         if !matcher.one_agent_allowed_by_robots(&robots_txt, "my_crawler", input.as_str()) {
             println!("Crawling is NOT allowed for the URL: {}", input);
             continue;
         }
         println!("Crawling is allowed for the URL: {}", input);
-
+        
         // if !url_exists(&conn, &input.to_string()) {
-            conn.execute(
-                "INSERT INTO crawl (url, title) 
-                VALUES (?1, ?2)",
-                &[input.as_str(), &"".to_string()],
-            ).expect("Failed to insert URL into database");
-        // } else {
-        //     conn.execute(
-        //         "UPDATE crawl SET counter = counter + 1 WHERE url = ?1",
-        //         &[&input.to_string()],
+        conn.execute(
+            "INSERT INTO crawl (url, title) 
+            VALUES (?1, ?2)",
+            &[input.as_str(), &"".to_string()],
+        ).expect("Failed to insert URL into database");
+
+        scraping_web(&input, &conn, &mut links);
+            // } else {
+                //     conn.execute(
+                    //         "UPDATE crawl SET counter = counter + 1 WHERE url = ?1",
+                    //         &[&input.to_string()],
         //     ).expect("Failed to update URL counter in database");
 
         // }
@@ -181,7 +183,8 @@ fn scraping_web(url: &Url, conn: &Connection, urls: &mut VecDeque<Url>) {
                     absolute_url.set_fragment(None);
 
                     let final_url_str = absolute_url.as_str();
-                    urls.push_back(Url::parse(&final_url_str).expect("Failed to parse URL"));
+                    urls.push_back(absolute_url.clone());
+                    println!("{}", final_url_str);
 
                     // Maybe just add it and check with db
                     // let mut stmt: i32 = conn.query_row("SELECT COUNT(*) FROM crawl WHERE url = ?1", [final_url_str.clone()], |row| row.get(0)).expect("Failed to execute query");
