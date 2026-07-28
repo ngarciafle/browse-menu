@@ -186,14 +186,19 @@ async fn scraping_web(url: &Url, conn: &Connection, urls: &mut VecDeque<Url>) {
 
     for element in document.select(&selector) {
         if let Some(href) = element.value().attr("href") {
+            let href = href.trim();
             // println!("{:?}", href);
-            if href.starts_with("#") {
+            if href.starts_with("#") || href.is_empty() {
                 continue; // Skip anchors
             }
 
             match url.join(href) {
                 Ok(mut absolute_url) => {
                     absolute_url.set_fragment(None);
+
+                    if (absolute_url.scheme() != "http" && absolute_url.scheme() != "https") {
+                        continue; // Skip non-http/https URLs
+                    }
 
                     let final_url_str = absolute_url.as_str();
                     urls.push_back(absolute_url.clone());
