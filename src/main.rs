@@ -15,7 +15,8 @@ use crawl::crawl;
 use init_db::init_db;
 use log_in::log_in;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let mut history: Vec<String> = Vec::new();
 
     let log_choice = Select::new()
@@ -48,7 +49,7 @@ fn main() {
             manage(&mut history, &conn, &mut logged_in);
         } else if selection == 4 {
             history.push("Crawl".to_string());
-            crawl(&mut history, &conn);
+            crawl(&mut history, &conn).await;
         } else {
             println!("Exiting...");
             history.push("Exit".to_string());

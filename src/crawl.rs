@@ -3,12 +3,12 @@ use url::Url;
 use robotstxt::DefaultMatcher;
 use scraper::{Html, Selector};
 use rusqlite::Connection;
-use tokio::sync::oneshot;
+use tokio::signal;
 use std::time::Duration;
 use std::collections::VecDeque;
-use reqwest::blocking::Client;
+use reqwest::Client;
 
-pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
+pub async fn crawl(history: &mut Vec<String>, conn: &Connection) {
     let input: String = Input::new()
         .with_prompt("Enter the URL to crawl")
         .show_default(false)
@@ -21,56 +21,68 @@ pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
 
     let input: Url = Url::parse(&input).expect("Failed to parse URL");
     // crawling(&input, &conn);
-
+    
     let mut links: VecDeque<Url> = VecDeque::new();
     links.push_back(input.clone()); 
 
-    while let Some(input) = links.pop_front() {
-        if url_exists(&conn, input.as_str()) {
-            conn.execute(
-                "UPDATE crawl SET counter = counter + 1 WHERE url = ?1",
-                &[input.as_str()],
-            ).expect("Failed to update URL counter in database");
-            // scraping_web(&input, &conn, &mut links);
-            // Dont know if scrape if it was scraped
-            continue;
-        } 
+    println!("Crawling started🚀 CRL+C TO STOP🛑");
+
+    tokio::select! {
+        _ = async {
+            while let Some(input) = links.pop_front() {
+                if url_exists(&conn, input.as_str()) {
+                    conn.execute(
+                        "UPDATE crawl SET counter = counter + 1 WHERE url = ?1",
+                        &[input.as_str()],
+                    ).expect("Failed to update URL counter in database");
+                    // scraping_web(&input, &conn, &mut links);
+                    // Dont know if scrape if it was scraped
+                    continue;
+                } 
+                
+                let mut matcher = DefaultMatcher::default();
+                
+                // If link is broken just continue
+                let mut robots_txt = match get_robot(&input).await {
+                    Ok(robots) => robots,
+                    Err(e) => {
+                        println!("Failed to get robots.txt for {}: {}", input, e);
+                        continue;
+                    }
+                };
+                
+                // println!("Robot.txt: {:#?}", robots_txt);  
+                
+                if !matcher.one_agent_allowed_by_robots(&robots_txt, "my_crawler", input.as_str()) {
+                    println!("Crawling is NOT allowed for the URL: {}", input);
+                    continue;
+                }
+                println!("Crawling is allowed for the URL: {}", input);
+                
+                // if !url_exists(&conn, &input.to_string()) {
+                conn.execute(
+                    "INSERT INTO crawl (url, title) 
+                    VALUES (?1, ?2)",
+                    &[input.as_str(), &"".to_string()],
+                ).expect("Failed to insert URL into database");
         
-        let mut matcher = DefaultMatcher::default();
+                scraping_web(&input, &conn, &mut links).await;
+                    // } else {
+                        //     conn.execute(
+                            //         "UPDATE crawl SET counter = counter + 1 WHERE url = ?1",
+                            //         &[&input.to_string()],
+                //     ).expect("Failed to update URL counter in database");
         
-        // If link is broken just continue
-        let mut robots_txt = match get_robot(&input) {
-            Ok(robots) => robots,
-            Err(e) => {
-                println!("Failed to get robots.txt for {}: {}", input, e);
-                continue;
+                // }
             }
-        };
-        
-        // println!("Robot.txt: {:#?}", robots_txt);  
-        
-        if !matcher.one_agent_allowed_by_robots(&robots_txt, "my_crawler", input.as_str()) {
-            println!("Crawling is NOT allowed for the URL: {}", input);
-            continue;
+        } => {
+            println!("Crawling ended.");
+        }    
+        _ = signal::ctrl_c() => {
+            println!("Crawling stopped by user.");
         }
-        println!("Crawling is allowed for the URL: {}", input);
-        
-        // if !url_exists(&conn, &input.to_string()) {
-        conn.execute(
-            "INSERT INTO crawl (url, title) 
-            VALUES (?1, ?2)",
-            &[input.as_str(), &"".to_string()],
-        ).expect("Failed to insert URL into database");
-
-        scraping_web(&input, &conn, &mut links);
-            // } else {
-                //     conn.execute(
-                    //         "UPDATE crawl SET counter = counter + 1 WHERE url = ?1",
-                    //         &[&input.to_string()],
-        //     ).expect("Failed to update URL counter in database");
-
-        // }
     }
+
 
 
     // Petition as a EXAMPLE
@@ -100,7 +112,7 @@ pub fn crawl(history: &mut Vec<String>, conn: &Connection) {
 }
 
 
-fn get_robot(parsed_url: &Url) -> Result<String, Box<dyn std::error::Error>> {
+async fn get_robot(parsed_url: &Url) -> Result<String, Box<dyn std::error::Error>> {
     let robots_url = parsed_url.join("/robots.txt")?;
 
     let client = Client::builder()
@@ -108,9 +120,9 @@ fn get_robot(parsed_url: &Url) -> Result<String, Box<dyn std::error::Error>> {
         .build()
         .expect("Failed to build HTTP client");
 
-    let response = client.get(robots_url.as_str()).send()?;
+    let response = client.get(robots_url.as_str()).send().await?;
 
-    let content = response.text().unwrap_or_else(|_| "Failed to read response body".to_string());
+    let content = response.text().await.unwrap_or_else(|_| "Failed to read response body".to_string());
 
     Ok(content)
 
@@ -142,13 +154,13 @@ fn get_robot(parsed_url: &Url) -> Result<String, Box<dyn std::error::Error>> {
 
 
 // Change to add links in a qeue
-fn scraping_web(url: &Url, conn: &Connection, urls: &mut VecDeque<Url>) {
+async fn scraping_web(url: &Url, conn: &Connection, urls: &mut VecDeque<Url>) {
     let client = Client::builder()
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
         .build()
         .expect("Failed to build HTTP client");
 
-    let response = match client.get(url.as_str()).send() {
+    let response = match client.get(url.as_str()).send().await {
         Ok(res) => {
             if res.status().is_success() {
                 res
@@ -163,7 +175,7 @@ fn scraping_web(url: &Url, conn: &Connection, urls: &mut VecDeque<Url>) {
         }
     };
 
-    let body = response.text().unwrap_or_else(|_| "Failed to read response body".to_string());
+    let body = response.text().await.unwrap_or_else(|_| "Failed to read response body".to_string());
     // println!("Crawled content:\n{}", body);
 
     let document = Html::parse_document(&body);
