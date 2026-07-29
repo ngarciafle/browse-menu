@@ -2,6 +2,8 @@ use dialoguer::Input;
 use dialoguer::Password;
 use dialoguer::Select;
 use crate::log_in::log_in;
+use crate::add_user::add_user;
+use crate::remove_user::remove_user;
 use rusqlite::Connection;
 
 
@@ -44,9 +46,11 @@ pub fn manage(history: &mut Vec<String>, conn: &rusqlite::Connection, logged: &m
     
         if selection == 0 {
             history.push("Add User".to_string());
+            add_user(history, &conn);
     
         } else if selection == 1 {
             history.push("Delete User".to_string());
+            remove_user(history, &conn);
         } else if selection == 2 {
             history.push("List Users".to_string());
     
