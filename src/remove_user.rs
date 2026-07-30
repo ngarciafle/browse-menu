@@ -23,7 +23,7 @@ pub fn remove_user(history: &mut Vec<String>, conn: &Connection) {
         .default(0)
         .interact()
         .expect("Failed to read selection");
-    let selected_username = &usernames[username];
+    let selected_username: String = usernames[username].clone();
 
     // Check the password
     let password: String = Password::new()
@@ -31,12 +31,11 @@ pub fn remove_user(history: &mut Vec<String>, conn: &Connection) {
         .interact()
         .expect("Failed to read line");
 
-    let result_cred = conn.query_row(
+    let hashed_password: String = conn.query_row(
         "SELECT password FROM credentials WHERE username = ?1",
-        &[selected_username],
+        [selected_username.clone()],
         |row| row.get(0),
-    );
-    let hashed_password = result_cred.expect("Failed to get hashed password");
+    ).expect("Failed to get hashed password");
 
     if !bcrypt::verify(password, &hashed_password).unwrap_or(false) {
         println!("Incorrect password.");
@@ -47,20 +46,20 @@ pub fn remove_user(history: &mut Vec<String>, conn: &Connection) {
     // Delete the user from the database
     match conn.execute(
         "DELETE FROM credentials WHERE username = ?1",
-        &[&username],
+        &[&selected_username],
     ) {
         Ok(rows_affected) => {
             if rows_affected > 0 {
-                println!("User '{}' removed successfully.", username);
-                history.push(format!("Removed user: {}", username));
+                println!("User '{}' removed successfully.", selected_username);
+                history.push(format!("Removed user: {}", selected_username));
             } else {
-                println!("User '{}' not found.", username);
-                history.push(format!("Failed to remove user: {} - not found", username));
+                println!("User '{}' not found.", selected_username);
+                history.push(format!("Failed to remove user: {} - not found", selected_username));
             }
         }
         Err(e) => {
-            println!("Failed to remove user '{}': {}", username, e);
-            history.push(format!("Failed to remove user: {} - {}", username, e));
+            println!("Failed to remove user '{}': {}", selected_username, e);
+            history.push(format!("Failed to remove user: {} - {}", selected_username, e));
         }
     }
     //Check if there are no users left in the database, if so, create a new admin user
