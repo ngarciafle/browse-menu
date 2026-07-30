@@ -5,6 +5,8 @@ mod manage;
 mod crawl;
 mod init_db;
 mod log_in;
+mod add_user;
+mod remove_user;
 
 use dialoguer::Select;
 use save::save;
@@ -14,6 +16,8 @@ use manage::manage;
 use crawl::crawl;
 use init_db::init_db;
 use log_in::log_in;
+use add_user::add_user;
+use remove_user::remove_user;
 
 #[tokio::main]
 async fn main() {
