@@ -3,6 +3,7 @@ use dialoguer::Password;
 use dialoguer::Select;
 use bcrypt::{hash, DEFAULT_COST};
 use rusqlite::Connection;
+use crate::log_in::log_in;
 // Maybe import log in ??
 
 pub fn remove_user(history: &mut Vec<String>, conn: &Connection) {
@@ -63,4 +64,20 @@ pub fn remove_user(history: &mut Vec<String>, conn: &Connection) {
         }
     }
     //Check if there are no users left in the database, if so, create a new admin user
+    let user_count: i64 = match conn.query_row(
+        "SELECT COUNT(*) FROM credentials",
+        [],
+        |row| row.get(0),
+    ) {
+        Ok(count) => count,
+        Err(e) => {
+            eprintln!("Failed to query user count: {}", e);
+            0
+        }
+    };
+
+    if user_count == 0 {
+        println!("No users left, let's create a new admin user.");
+        log_in(history, &conn);
+    }
 }
