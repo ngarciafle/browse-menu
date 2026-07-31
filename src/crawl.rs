@@ -181,6 +181,11 @@ async fn scraping_web(url: &Url, conn: &Connection, urls: &mut VecDeque<Url>) {
     let document = Html::parse_document(&body);
     let selector = Selector::parse("a[href]").unwrap();
 
+    conn.execute(
+        "UPDATE crawl SET title = ?1 WHERE url = ?2",
+        &[&document.root_element().text().collect::<String>(), url.as_str()],
+    ).expect("Failed to update crawl entry");
+
     // let mut links: Vec<String> = Vec::new();
     // println!("========= Links found on the page =========");
 

@@ -58,19 +58,20 @@ pub fn manage(history: &mut Vec<String>, conn: &rusqlite::Connection, logged: &m
     
         } else if selection == 3 {
             history.push("Read db".to_string());
-            let mut urls = conn.prepare("SELECT id, url, counter FROM crawl").expect("Failed to prepare statement");
+            let mut urls = conn.prepare("SELECT id, url, counter, title FROM crawl").expect("Failed to prepare statement");
             // **
             let url_iter = urls.query_map([], |row| {
                 let id: i32 = row.get(0)?;
                 let url: String = row.get(1)?;
                 let counter: i32 = row.get(2)?;
-                Ok((id, url, counter))
+                let title: String = row.get(3)?;
+                Ok((id, url, counter, title))
             }).expect("Failed to query urls");
     
             for url in url_iter {
                 match url {
-                    Ok((id, url, counter)) => {
-                        println!("ID: {}, URL: {}, Counter: {}", id, url, counter);
+                    Ok((id, url, counter, title)) => {
+                        println!("ID: {}, URL: {}, Counter: {}, Title: {}", id, url, counter, title);
                     }
                     Err(e) => {
                         println!("Error reading URL from database: {}", e);
