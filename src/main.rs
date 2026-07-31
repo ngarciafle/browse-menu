@@ -7,6 +7,7 @@ mod init_db;
 mod log_in;
 mod add_user;
 mod remove_user;
+mod list_users;
 
 use dialoguer::Select;
 use save::save;
@@ -18,6 +19,7 @@ use init_db::init_db;
 use log_in::log_in;
 use add_user::add_user;
 use remove_user::remove_user;
+use list_users::list_users;
 
 #[tokio::main]
 async fn main() {
