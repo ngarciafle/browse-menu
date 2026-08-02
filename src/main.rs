@@ -8,6 +8,7 @@ mod log_in;
 mod add_user;
 mod remove_user;
 mod list_users;
+mod rank_url;
 
 use dialoguer::Select;
 use save::save;
@@ -20,6 +21,7 @@ use log_in::log_in;
 use add_user::add_user;
 use remove_user::remove_user;
 use list_users::list_users;
+use rank_url::rank_url;
 
 #[tokio::main]
 async fn main() {

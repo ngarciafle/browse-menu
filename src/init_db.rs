@@ -43,6 +43,18 @@ pub fn init_db(log_in: bool, history: &mut Vec<String>) -> Result<(Connection, b
             )",
             [],
         )
+        conn.execute(
+            // Will just use vectors to search for now
+            // "CREATE TABLE IF NOT EXISTS browser USING fts5(
+            //     url UNINDEXED,
+            //     title, 
+            //     body
+            // )"
+            "CREATE VIRTUAL TABLE IF NOT EXISTS browser_vec USING vec0 (
+                id_web INTEGER PRIMARY KEY,
+                vector float[348]
+            )"
+        )
         .expect("Failed to create table");
 
         println!("Let's create the admin credentials for the first time.");
