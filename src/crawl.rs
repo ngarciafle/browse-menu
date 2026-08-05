@@ -7,7 +7,7 @@ use tokio::signal;
 use std::time::Duration;
 use std::collections::VecDeque;
 use reqwest::Client;
-use crate::scraping_web::scraping_web;
+use crate::rank_url::rank_url;
 
 pub async fn crawl(history: &mut Vec<String>, conn: &Connection) {
     let input: String = Input::new()
