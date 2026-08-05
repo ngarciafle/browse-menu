@@ -38,3 +38,5 @@
 
 # Data dir
 /pub/
+
+.fastembed_cache

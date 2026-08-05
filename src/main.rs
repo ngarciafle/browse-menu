@@ -9,6 +9,7 @@ mod add_user;
 mod remove_user;
 mod list_users;
 mod rank_url;
+mod vec_content;
 
 use dialoguer::Select;
 use save::save;
@@ -22,6 +23,8 @@ use add_user::add_user;
 use remove_user::remove_user;
 use list_users::list_users;
 use rank_url::rank_url;
+use fastembed::{TextEmbedding, InitOptions, EmbeddingModel};
+use vec_content::generate_vector;
 
 #[tokio::main]
 async fn main() {
@@ -40,6 +43,9 @@ async fn main() {
     // Log in if the user wants to log in
     let mut logged_in: bool = !was_created || (log_choice == 0 && log_in(&mut history, &conn));
 
+    // Init IA model
+    let mut model = init_ia_model();
+
     loop {
         let selection = select();
         
@@ -51,13 +57,13 @@ async fn main() {
             load(&mut history);
         } else if selection == 2 {
             history.push("Search".to_string());
-            search(&mut history);
+            search(&mut history, &mut model, &conn);
         } else if selection == 3 {
             history.push("Manage".to_string());
             manage(&mut history, &conn, &mut logged_in);
         } else if selection == 4 {
             history.push("Crawl".to_string());
-            crawl(&mut history, &conn).await;
+            crawl(&mut history, &conn, &mut model).await;
         } else {
             println!("Exiting...");
             history.push("Exit".to_string());
@@ -77,4 +83,11 @@ fn select() -> usize {
 
     println!("You selected: {}", opts[selection]);
     return selection;
+}
+
+
+fn init_ia_model() -> TextEmbedding {
+    let options = InitOptions::new(EmbeddingModel::AllMiniLML6V2);
+    let mut model = TextEmbedding::try_new(options).expect("Error cargando el modelo");
+    model
 }

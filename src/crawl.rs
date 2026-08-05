@@ -8,8 +8,10 @@ use std::time::Duration;
 use std::collections::VecDeque;
 use reqwest::Client;
 use crate::rank_url::rank_url;
+use fastembed::{TextEmbedding, InitOptions, EmbeddingModel};
 
-pub async fn crawl(history: &mut Vec<String>, conn: &Connection) {
+
+pub async fn crawl(mut history: &mut Vec<String>, conn: &Connection, mut model: &mut TextEmbedding) {
     let input: String = Input::new()
         .with_prompt("Enter the URL to crawl")
         .show_default(false)
@@ -67,7 +69,7 @@ pub async fn crawl(history: &mut Vec<String>, conn: &Connection) {
                     &[input.as_str(), &"".to_string()],
                 ).expect("Failed to insert URL into database");
         
-                scraping_web(&input, &conn, &mut links).await;
+                scraping_web(&mut history, &input, &conn, &mut links, &mut model).await;
                     // } else {
                         //     conn.execute(
                             //         "UPDATE crawl SET counter = counter + 1 WHERE url = ?1",
@@ -155,7 +157,7 @@ async fn get_robot(parsed_url: &Url) -> Result<String, Box<dyn std::error::Error
 
 
 // Change to add links in a qeue
-async fn scraping_web(url: &Url, conn: &Connection, urls: &mut VecDeque<Url>) {
+async fn scraping_web(mut history: &mut Vec<String>, url: &Url, conn: &Connection, urls: &mut VecDeque<Url>, model: &mut TextEmbedding) {
     let client = Client::builder()
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
         .build()
@@ -178,6 +180,9 @@ async fn scraping_web(url: &Url, conn: &Connection, urls: &mut VecDeque<Url>) {
 
     let body = response.text().await.unwrap_or_else(|_| "Failed to read response body".to_string());
     // println!("Crawled content:\n{}", body);
+
+    // Will make it async later 
+    rank_url(history, conn, url.as_str(), &body, model);
 
     let document = Html::parse_document(&body);
     let selector = Selector::parse("a[href]").unwrap();
