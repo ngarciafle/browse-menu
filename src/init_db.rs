@@ -62,7 +62,7 @@ pub fn init_db(log_in: bool, history: &mut Vec<String>) -> Result<(Connection, b
             // )"
             "CREATE VIRTUAL TABLE IF NOT EXISTS browser_vec USING vec0 (
                 id_web INTEGER PRIMARY KEY,
-                vector float[348]
+                vector float[384]
             )",
             [],
         )
