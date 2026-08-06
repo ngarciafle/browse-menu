@@ -16,21 +16,21 @@ pub fn search(history: &mut Vec<String>, model: &mut TextEmbedding, conn: &Conne
     let vector = generate_vector(model, &input);
 
     let mut stmt = conn.prepare(
-        "SELECT id_web, distance FROM browser_vec WHERE vector MATCH ?1 ORDER BY distance ASC LIMIT 10"
+        "SELECT c.url, v.distance FROM ( SELECT id_web, distance FROM browser_vec WHERE vector MATCH ?1 ORDER BY distance ASC LIMIT 10) v JOIN crawl c ON v.id_web = c.id"
     ).expect("Failed to prepare statement");
 
     let treated_vector: Vec<u8> = vector.iter().flat_map(|f| f.to_le_bytes()).collect();
 
     let results = stmt.query_map(params![treated_vector], |row| {
-        let id_web: i32 = row.get(0)?;
-        Ok((id_web))
+        let url: String = row.get(0)?;
+        Ok((url))
     }).expect("Failed to query results");
 
     println!("Search results:");
     for result in results {
         match result {
-            Ok((id_web)) => {
-                println!("ID: {}", id_web);
+            Ok((url)) => {
+                println!("URL: {}", url);
             },
             Err(e) => eprintln!("Error retrieving result: {}", e),
         }
