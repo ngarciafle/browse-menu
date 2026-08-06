@@ -16,10 +16,10 @@ pub fn search(history: &mut Vec<String>, model: &mut TextEmbedding, conn: &Conne
     let vector = generate_vector(model, &input);
 
     let mut stmt = conn.prepare(
-        "SELECT id_web, vector FROM browser_vec WHERE vct MATCH ?1 ORDER BY vct_distance(vector, ?) ASC LIMIT 10"
+        "SELECT id_web, distance FROM browser_vec WHERE vector MATCH ?1 ORDER BY distance ASC LIMIT 10"
     ).expect("Failed to prepare statement");
 
-    let treated_vector: Vec<u8> = vector.iter().flat_map(|f| f.to_le_bytes().to_vec()).collect();
+    let treated_vector: Vec<u8> = vector.iter().flat_map(|f| f.to_le_bytes()).collect();
 
     let results = stmt.query_map(params![treated_vector], |row| {
         let id_web: i32 = row.get(0)?;

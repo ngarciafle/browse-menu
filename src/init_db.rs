@@ -1,16 +1,23 @@
-use rusqlite::{Connection, Result};
+use rusqlite::{Connection, Result, ffi::sqlite3_auto_extension};
 use std::fs;
 use std::path::Path;
 use dialoguer::{Input, Password};
 use bcrypt::{hash, DEFAULT_COST};
 use rusqlite::OptionalExtension;
 use crate::log_in::log_in;
+use sqlite_vec::sqlite3_vec_init;
 
 pub fn init_db(log_in: bool, history: &mut Vec<String>) -> Result<(Connection, bool)> {
     // Just initialize db
     if let Err(e) = fs::create_dir_all("pub") {
         history.push(format!("Failed to create 'pub' directory: {}", e));
         panic!("Could not create 'pub' directory: {}", e);
+    }
+
+    unsafe {
+        sqlite3_auto_extension(Some(std::mem::transmute(
+            sqlite3_vec_init as *const ()
+        )));
     }
 
     let route_db: String = format!("pub/db");
@@ -43,6 +50,9 @@ pub fn init_db(log_in: bool, history: &mut Vec<String>) -> Result<(Connection, b
             )",
             [],
         );
+
+        // Init module vec0
+
         conn.execute(
             // Will just use vectors to search for now
             // "CREATE TABLE IF NOT EXISTS browser USING fts5(
